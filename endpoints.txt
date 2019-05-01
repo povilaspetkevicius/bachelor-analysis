@@ -1,0 +1,78 @@
+/api - pinginimas - {
+    "message": "Ping Successfull" 
+}
+/api/airport/ - oro uostai - [
+    "PLQ",
+    "KUN",
+    "VNO"
+ ]
+/api/airport/:IATA/flight - oro uoste vykdomi skrydziai [
+    "OS834",
+    "BT344",
+    "LO772",
+    "LO779",
+    "SN2371",
+    "PS177",
+    "FR1502",
+    "SK1743" ]
+/api/airport/:IATA/flight/records - visi skrydziu irasai - [
+    {
+        "_id": "5cc2da3445890809f0c899fb",
+        "flightNumber": "OS834",
+        "date": "2019-04-26",
+        "airport": "VNO",
+        "scheduledTimeOfArrival": "",
+        "scheduledTimeOfDeparture": "13:30",
+        "expectedTime": "",
+        "status": "Eiti prie vartu",
+        "__v": 0
+    },
+    {
+        "_id": "5cc2da3445890809f0c899f9",
+        "flightNumber": "BT344",
+        "date": "2019-04-26",
+        "airport": "VNO",
+        "scheduledTimeOfArrival": "",
+        "scheduledTimeOfDeparture": "13:30",
+        "expectedTime": "",
+        "status": "Eiti prie vartu",
+        "__v": 0
+    } ]
+/api/flight - visi skrydziu numeriai per 3 oro uostus - [
+    "BT036",
+    "SK2747",
+    "BT035",
+    "SK2746",
+    "W68151" ]
+/api/flight/records - visi skrydziu irasai per 3 oro uostus - [
+    {
+        "_id": "5cc2da3445890809f0c899fb",
+        "flightNumber": "OS834",
+        "date": "2019-04-26",
+        "airport": "VNO",
+        "scheduledTimeOfArrival": "",
+        "scheduledTimeOfDeparture": "13:30",
+        "expectedTime": "",
+        "status": "Eiti prie vartu",
+        "__v": 0
+    },
+    {
+        "_id": "5cc2da3445890809f0c899f9",
+        "flightNumber": "BT344",
+        "date": "2019-04-26",
+        "airport": "VNO",
+        "scheduledTimeOfArrival": "",
+        "scheduledTimeOfDeparture": "13:30",
+        "expectedTime": "",
+        "status": "Eiti prie vartu",
+        "__v": 0
+    } ]
+/api/flight/:flightNumber/status - [
+    "Atvykimas",
+    "Atvykimas",
+    "Atvykimas",
+    "Atvykimas",
+    "Atvykimas",
+    "Atvykimas",
+    "Lektuvas nusileido" ]
+

@@ -1,10 +1,9 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const mongo = require('./db');
 const _ = require('underscore');
-const Schema = mongoose.Schema;
 const app = express()
 const port = 3000
-
+let flightSchema = require('./models').flightSchema;
 
 let router = express.Router();
 
@@ -14,34 +13,9 @@ let statusRouter = express.Router();
 
 let airportRouter = express.Router();
 
-const mongo_url = 'mongodb://localhost:27017/airport_data';
+var flightModel = require('mongoose').model('flight', flightSchema);
 
-const mongo_options = {
-    useNewUrlParser: true,
-    reconnectTries: Number.MAX_VALUE,
-    reconnectInterval: 500,
-    connectTimeoutMS: 10000,
-};
-
-var flightSchema = new Schema({
-    flightNumber: String,
-    date: String,
-    airport: String,
-    scheduledTimeOfArrival: String,
-    scheduledTimeOfDeparture: String,
-    expectedTime: String,
-    status: String
-});
-var flightModel = mongoose.model('flight', flightSchema);
-
-
-mongoose.connect(mongo_url, mongo_options, function (err, res) {
-    if (err) {
-        writeError(error);
-    } else {
-        console.log('Succees. connected to: ' + mongo_url);
-    }
-})
+mongo.connect();
 
 statusRouter.get('/', (req, res) => {
     if (req.flightNo !== '' && req.flightNo.length !== 0) {
@@ -66,7 +40,8 @@ statusRouter.get('/', (req, res) => {
 flightRouter.use('/status', statusRouter);
 
 flightRouter.get('/', (req, res) => {
-    if (req.airport.length > 0 && req.airport !== null && req.airport !== undefined) {
+    if ((req.aiport !== null && req.aiport !== undefined)
+        && req.airport.length > 0) {
         flightModel.find({ airport: req.airport }, (err, flights) => {
             console.log(flights.length);
             if (err) {
@@ -88,8 +63,9 @@ flightRouter.get('/', (req, res) => {
     }
 });
 
-flightRouter.get('/all', (req, res) => {
-    if (req.airport.length > 0 && req.airport !== null && req.airport !== undefined) {
+flightRouter.get('/records', (req, res) => {
+    if ((req.aiport !== null && req.aiport !== undefined)
+        && req.airport.length > 0) {
         flightModel.find({ airport: req.airport }, (err, flights) => {
             if (err) {
                 res.status(503).send('Internal server error');
