@@ -1,4 +1,5 @@
 const Schema = require('mongoose').Schema;
+
 var flightSchema = new Schema({
     flightNumber: String,
     date: String,
@@ -8,4 +9,5 @@ var flightSchema = new Schema({
     expectedTime: String,
     status: String
 })
-exports.flightSchema = flightSchema;
+var flightModel = require('mongoose').model('flight', flightSchema);
+exports.flightModel = flightModel;

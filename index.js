@@ -3,7 +3,7 @@ const mongo = require('./db');
 const _ = require('underscore');
 const app = express()
 const port = 3000
-let flightSchema = require('./models').flightSchema;
+
 
 let router = express.Router();
 
@@ -13,7 +13,7 @@ let statusRouter = express.Router();
 
 let airportRouter = express.Router();
 
-var flightModel = require('mongoose').model('flight', flightSchema);
+var flightModel = require('./models').flightModel;
 
 mongo.connect();
 
