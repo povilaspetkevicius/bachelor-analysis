@@ -1,5 +1,6 @@
 const express = require('express');
 const mongo = require('./db');
+const stats = require('./analysis');
 const _ = require('underscore');
 const app = express()
 const port = 3000
@@ -97,6 +98,26 @@ flightRouter.use('/:flightNumber/status', function (req, res, next) {
     req.flightNo = req.params.flightNumber
     next();
 }, statusRouter);
+
+flightRouter.use('/:flightNumber/stats', function (req, res, next) {
+    req.flightNumber = req.params.flightNumber;
+    try{
+        
+        var p = new Promise((resolve,reject) => {
+            let s = stats.countStatistics(req);
+            resolve(s);
+        })
+        p.then((result) => {
+            res.send(result);
+        });
+    } catch(err) {
+        console.log(err);
+        res.status(503).json({
+            'message': 'something went wrong...',
+            'error': err
+        })
+    }
+})
 
 router.get('/', function (req, res) {
     res.json({ 'message': 'Ping Successfull' });

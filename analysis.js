@@ -5,25 +5,29 @@ const statistics = require('simple-statistics');
 var disruption = ["Atšaukta", "ATŠAUKTA", "VĖLUOJA", "Vėluojama", "Nežinoma"];
 var stats;
 
-countAverageOfDisruptions = function (searchParams) {
+countAverageOfDisruptions = async function (searchParams) {
     let allFlights;
-    let disruptedFlights
-
-
-    flightModel.find(searchParams, (err, flight) => {
+    let disruptedFlights;
+    let flights;
+    await flightModel.find(searchParams, (err, flight) => {
         if (err) {
             throw err;
         } else {
-            allFlights = flight.length;
-            disruptedFlights = flight.filter((x) => {
-                return disruption.find((d) => {
-                    return d == x.status
-                })
-            }).length;
-            return disruptedFlights / allFlights;
+            flights = flight;
         }
-    })
+    });
+    allFlights = await flights.length;
+    disruptedFlights = await flights.filter((x) => {
+        return disruption.find((d) => {
+            return d == x.status
+        })
+    }).length;
+    avg = await disruptedFlights / allFlights;
+    return avg;
 };
+
+
+
 
 countStandartDeviation = function (params) {
     let allFlights = [];
@@ -140,7 +144,7 @@ countStandartDeviation = function (params) {
             }).forEach((f) => {
                 sum_dis = sum_dis + f.count;
             })
-            flightsArr.push(sum_all/sum_dis);
+            flightsArr.push(sum_all / sum_dis);
         })
         allMeans = flightsArr;
         return statistics.standardDeviation(allMeans);
@@ -155,12 +159,11 @@ countStandartDeviation = function (params) {
             }
         });
         return statistics.standardDeviation(allMeans);
-    } else return 0;    
+    } else return 0;
 }
 
-countStatistics = function (params) {
-    var objectToReturn
-
+exports.countStatistics = async function (params) {
+    var objectToReturn = {};
     if (params) {
         if (params.airport) {
             objectToReturn.airport = countAverageOfDisruptions({ airport: params.airport });
@@ -170,14 +173,15 @@ countStatistics = function (params) {
             objectToReturn.airportStandartDeviation = countStandartDeviation(params);
         }
         if (params.flightNumber) {
-            objectToReturn.flight = countAverageOfDisruptions({ flightNumber: params.flightNumber });
+            objectToReturn.disruptionAvg = await countAverageOfDisruptions({ flightNumber: params.flightNumber });
             if (params.date) {
-                objectToReturn.flightByDate = countAverageOfDisruptionOnDay({ flightNumber: params.flightNumber, date: params.date });
+                objectToReturn.flightByDate = await countAverageOfDisruptionOnDay({ flightNumber: params.flightNumber, date: params.date });
             }
-            objectToReturn.flightStandartDeviation = countStandartDeviation(params);
+            objectToReturn.disruptionStdDeviation = await countStandartDeviation(params);
         }
 
     }
+    return objectToReturn;
 }
 
-exports.countStatistics = countStatistics;
+// exports.countStats = countStatistics;
