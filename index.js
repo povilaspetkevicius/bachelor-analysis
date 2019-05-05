@@ -17,7 +17,6 @@ let airportRouter = express.Router();
 var flightModel = require('./models').flightModel;
 
 mongo.connect();
-
 statusRouter.get('/', (req, res) => {
     if (req.flightNo !== '' && req.flightNo.length !== 0) {
         flightModel.find({ flightNumber: req.flightNo }, (err, flights) => {
