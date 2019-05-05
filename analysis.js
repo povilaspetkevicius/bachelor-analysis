@@ -26,7 +26,23 @@ countAverageOfDisruptions = async function (searchParams) {
     return avg;
 };
 
-
+countFlights = async function (searchParams) {
+    
+    let flightsCount = await flightModel.find(searchParams, (err, flight) => {
+        if (err) {
+            throw err;
+        } else {
+            return flight;
+        }
+    });
+    let countAllFlights = await flightsCount.length;
+    let countDisruptedFlights = await flightsCount.filter((x) => {
+        return disruption.find((d) => {
+            return d == x.status
+        })
+    }).length;
+    return {countAllFlights, countDisruptedFlights};
+};
 
 
 countStandartDeviation = async function (params) {
@@ -167,6 +183,8 @@ countStandartDeviation = async function (params) {
     } else return 0;
 }
 
+
+
 exports.countStatistics = async function (params) {
     var objectToReturn = {};
     if (params) {
@@ -179,8 +197,14 @@ exports.countStatistics = async function (params) {
         }
         if (params.flightNumber) {
             objectToReturn.disruptionAvg = await countAverageOfDisruptions({ flightNumber: params.flightNumber });
+            let recordedFlights = await countFlights({ flightNumber: params.flightNumber }).then((res) => {return res});
+            objectToReturn.numberOfFlightsonRecord = await recordedFlights.countAllFlights;
+            objectToReturn.numberOfDisruptedFlightsOnRecords = await recordedFlights.countDisruptedFlights;
             if (params.date) {
                 objectToReturn.flightByDate = await countAverageOfDisruptions({ flightNumber: params.flightNumber, date: params.date });
+                let recordedFlights = await countFlights({ flightNumber: params.flightNumber, date: params.date }).then((res) => {return res});
+                objectToReturn.numberOfFlightsOnDateOnRecord = await recordedFlights.countAllFlights;
+                objectToReturn.numberOfDisruptedFlightsOnDateOnRecord = await recordedFlights.countDisruptedFlights;
             }
             objectToReturn.disruptionStdDeviation = await countStandartDeviation(params);
         }
@@ -188,5 +212,3 @@ exports.countStatistics = async function (params) {
     }
     return objectToReturn;
 }
-
-// exports.countStats = countStatistics;
