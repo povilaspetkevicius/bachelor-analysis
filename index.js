@@ -102,7 +102,6 @@ flightRouter.use('/:flightNumber/status', function (req, res, next) {
 flightRouter.use('/:flightNumber/stats', function (req, res, next) {
     req.flightNumber = req.params.flightNumber;
     try{
-        
         var p = new Promise((resolve,reject) => {
             let s = stats.countStatistics(req);
             resolve(s);
@@ -111,7 +110,25 @@ flightRouter.use('/:flightNumber/stats', function (req, res, next) {
             res.send(result);
         });
     } catch(err) {
-        console.log(err);
+        res.status(503).json({
+            'message': 'something went wrong...',
+            'error': err
+        })
+    }
+})
+
+flightRouter.use('/:flightNumber/:date/stats', function (req, res) {
+    req.flightNumber = req.params.flightNumber;
+    req.date = req.params.date;
+    try{
+        var p = new Promise((resolve,reject) => {
+            let s = stats.countStatistics(req);
+            resolve(s);
+        })
+        p.then((result) => {
+            res.send(result);
+        });
+    } catch(err) {
         res.status(503).json({
             'message': 'something went wrong...',
             'error': err
@@ -138,6 +155,43 @@ airportRouter.use('/:IATA/flight', function (req, res, next) {
     next();
 }, flightRouter);
 
+
+airportRouter.use('/:IATA/stats', function (req, res) {
+    req.airport = req.params.IATA;
+    try{
+        var p = new Promise((resolve,reject) => {
+            let s = stats.countStatistics(req);
+            resolve(s);
+        })
+        p.then((result) => {
+            res.send(result);
+        });
+    } catch(err) {
+        res.status(503).json({
+            'message': 'something went wrong...',
+            'error': err
+        })
+    }
+})
+
+airportRouter.use('/:IATA/:date/stats', function (req, res) {
+    req.airport = req.params.IATA;
+    req.date = req.params.date;
+    try{
+        var p = new Promise((resolve,reject) => {
+            let s = stats.countStatistics(req);
+            resolve(s);
+        })
+        p.then((result) => {
+            res.send(result);
+        });
+    } catch(err) {
+        res.status(503).json({
+            'message': 'something went wrong...',
+            'error': err
+        })
+    }
+})
 
 router.use('/flight', flightRouter);
 
