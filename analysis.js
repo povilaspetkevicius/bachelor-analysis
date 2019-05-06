@@ -143,21 +143,49 @@ countCovarianceAndCorrelation = async function (params) {
             }
         }
     }
-    console.log(pairs.length);
-    console.log(params.flightNumber);
-    if (params.flightNumber.length > 0) {
+    await pairs.forEach(async (f) => {
+        let indexOfDuplicate = await pairs.findIndex((x) => {
+            return (x.flightNumber1 === f.flightNumber2) && (f.flightNumber1 === x.flightNumber2);
+        });
+        if (indexOfDuplicate) {
+            pairs.splice(indexOfDuplicate, 1);
+        }
+    });
+    if (params.flightNumber && params.flightNumber.length > 0) {
         pairs = await pairs.filter((x) => {
             console.log(x.flightNumber1);
             return x.flightNumber1 === params.flightNumber;
-        })
-    } else if (params.airport.length > 0) {
+        }).sort((a, b) => {
+            return (b.correlationOfFlightDisruptions - a.correlationOfFlightDisruptions);
+        });
+        pairs = await pairs.slice(0, 9);
+    } else if (params.airport && params.airport.length > 0) {
+        console.log('we here');
         airportFlights = await getDistinctFlights(params.airport);
         pairs = await pairs.filter(async (x) => {
             let t_pairs = await pairs;
             return t_pairs.map((y) => { return y.flightNumber1 }).indexOf(x.flightNumber1);
-        })
+        });
+        let pairs_inverse_correlate = await pairs.sort((a, b) => {
+            return (a.correlationOfFlightDisruptions - b.correlationOfFlightDisruptions);
+        }).slice(0, 9);
+        let pairs_correlate = await pairs.sort((a, b) => {
+            return (a.correlationOfFlightDisruptions - b.correlationOfFlightDisruptions);
+        }).reverse().slice(0, 9);
+        let pairs_inverse_covary = await pairs.sort((a, b) => {
+            return (a.correlationOfFlightDisruptions - b.correlationOfFlightDisruptions);
+        }).slice(0, 9);
+        let pairs_covary = await pairs.sort((a, b) => {
+            return (a.correlationOfFlightDisruptions - b.correlationOfFlightDisruptions);
+        }).reverse().slice(0, 9);
+        return {
+            fl_cov: pairs_covary,
+            fl_cov_i: pairs_inverse_covary,
+            fl_cor: pairs_correlate,
+            fl_cor_i: pairs_inverse_correlate
+        };
     }
-    pairs = await pairs.slice(0,4);
+
     return pairs;
 
 }
@@ -366,6 +394,7 @@ exports.countStatistics = async function (params) {
                 objectToReturn.airportByDate = await countAverageOfDisruptions({ airport: params.airport, date: params.date });
             }
             objectToReturn.airportStandartDeviation = await countStandartDeviation(params);
+            console.log('main part done');
             objectToReturn.linkedFlights = await countCovarianceAndCorrelation(params);
         }
         if (params.flightNumber) {
