@@ -18,18 +18,38 @@ var flightModel = require('./models').flightModel;
 
 mongo.connect();
 statusRouter.get('/', (req, res) => {
-    if (req.flightNo !== '' && req.flightNo.length !== 0) {
+    if (req.flightNo !== undefined && req.flightNo !== '' && req.flightNo.length !== 0) {
         flightModel.find({ flightNumber: req.flightNo }, (err, flights) => {
             if (err) {
                 res.status(503).send('Internal error');
             } else if (flights.length === 0) {
-                res.status(204).send('No Flights found containing flight number: ' + req.params.flightNumber);
+                res.status(204).send('No Flights found containing flight number: ' + req.flightNo);
             } else {
                 let statuses = [];
-                flights = flights.filter((e) => {
+                flights.sort((a,b) => {
+                    return a.date > b.date;
+                }).reverse().filter((e) => {
                     return e.status.length > 0;
-                }).forEach((e) => {
+                }).slice(0,99).forEach((e) => {
                     statuses.push(e.status);
+                });
+                res.send(statuses);
+            }
+        })
+    } else if (req.airport !== undefined && req.airport !== '' && req.airport.length !== 0){
+        flightModel.find({ airport: req.airport }, (err, flights) => {
+            if (err) {
+                res.status(503).send('Internal error');
+            } else if (flights.length === 0) {
+                res.status(204).send('No Flights statuses found for airport : ' + req.airport);
+            } else {
+                let statuses = [];
+                flights.sort((a,b) => {
+                    return a.date > b.date;
+                }).reverse().filter((e) => {
+                    return e.status.length > 0;
+                }).slice(0,99).forEach((e) => {
+                    statuses.push({ a: e.status, b: e.date, c: e.expectedTime});
                 });
                 res.send(statuses);
             }
@@ -43,7 +63,6 @@ flightRouter.get('/', (req, res) => {
     if ((req.aiport !== null && req.aiport !== undefined)
         && req.airport.length > 0) {
         flightModel.find({ airport: req.airport }, (err, flights) => {
-            console.log(flights.length);
             if (err) {
                 res.status(503).send('Internal server error');
             } else if (flights.length === 0) {
@@ -64,34 +83,59 @@ flightRouter.get('/', (req, res) => {
 });
 
 flightRouter.get('/records', (req, res) => {
-    if ((req.aiport !== null && req.aiport !== undefined)
+    console.log(req.airport);
+    if ((req.airport !== null && req.airport !== undefined)
         && req.airport.length > 0) {
+            
         flightModel.find({ airport: req.airport }, (err, flights) => {
             if (err) {
                 res.status(503).send('Internal server error');
             } else if (flights.length === 0) {
                 res.status(204).send('No flights for airport ' + req.airport + ' found');
             } else {
+                flights = flights.sort((a,b) => {
+                    return a.date > b.date;
+                }).reverse().filter((e) => {
+                    return e.status.length > 0;
+                }).slice(0,99);
                 res.send(flights);
             }
         });
     } else {
         flightModel.find({}, (err, flights) => {
+            flights = flights.sort((a,b) => {
+                return a.date > b.date;
+            }).reverse().filter((e) => {
+                return e.status.length > 0;
+            }).slice(0,99);
             res.send(flights);
         });
     }
 });
 
-flightRouter.get('/:flightNumber', (req, res) => {
-    flightModel.find({ flightNumber: req.params.flightNumber }, (err, flights) => {
-        if (flights.length === 0) {
-            res.status(204).send('No Flights found containing flight number: ' + req.params.flightNumber);
-        } else {
-            res.status(200).send(flights);
-        }
-    });
-
+flightRouter.get('/:fn/records', (req, res) => {
+    if ((req.aiport !== null && req.aiport !== undefined)
+        && req.airport.length > 0) {
+        flightModel.find({ flightNumber: req.params.fn, airport: req.airport }, (err, flights) => {
+            if (err) {
+                res.status(503).send('Internal server error');
+            } else if (flights.length === 0) {
+                res.status(204).send('No flights for airport ' + req.airport + 'and flight' + fn + ' found.');
+            } else {
+                res.send(flights);
+            }
+        });
+    } else {
+        flightModel.find({flightNumber: req.params.fn}, (err, flights) => {
+            if (flights.length === 0) {
+                res.status(204).send('No Flights found containing flight number: ' + req.params.flightNumber);
+            } else {
+                res.status(200).send(flights);
+            }
+        });
+    }
 });
+
 
 flightRouter.use('/:flightNumber/status', function (req, res, next) {
     req.flightNo = req.params.flightNumber
@@ -151,6 +195,7 @@ airportRouter.get('/', (req, res) => {
 
 airportRouter.use('/:IATA/flight', function (req, res, next) {
     req.airport = req.params.IATA;
+    console.log(req.airport);
     next();
 }, flightRouter);
 
@@ -163,6 +208,7 @@ airportRouter.use('/:IATA/stats', function (req, res) {
             resolve(s);
         })
         p.then((result) => {
+            result.airport = req.params.IATA;
             res.send(result);
         });
     } catch(err) {
@@ -182,6 +228,8 @@ airportRouter.use('/:IATA/:date/stats', function (req, res) {
             resolve(s);
         })
         p.then((result) => {
+            result.airport = req.params.IATA;
+            result.date = req.params.date;
             res.send(result);
         });
     } catch(err) {
@@ -191,6 +239,10 @@ airportRouter.use('/:IATA/:date/stats', function (req, res) {
         })
     }
 })
+airportRouter.use('/:IATA/status', function (req, res, next) {
+    req.airport = req.params.IATA;
+    next();
+}, statusRouter);
 
 router.use('/flight', flightRouter);
 

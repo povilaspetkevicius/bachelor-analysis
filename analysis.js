@@ -153,14 +153,12 @@ countCovarianceAndCorrelation = async function (params) {
     });
     if (params.flightNumber && params.flightNumber.length > 0) {
         pairs = await pairs.filter((x) => {
-            console.log(x.flightNumber1);
             return x.flightNumber1 === params.flightNumber;
         }).sort((a, b) => {
             return (b.correlationOfFlightDisruptions - a.correlationOfFlightDisruptions);
         });
         pairs = await pairs.slice(0, 9);
     } else if (params.airport && params.airport.length > 0) {
-        console.log('we here');
         airportFlights = await getDistinctFlights(params.airport);
         pairs = await pairs.filter(async (x) => {
             let t_pairs = await pairs;
@@ -246,11 +244,12 @@ countFlights = async function (searchParams) {
     return { countAllFlights, countDisruptedFlights };
 };
 
+
+
 countStandartDeviation = async function (params) {
-    let allFlights = [];
-    let flightNumber = params.flight ? params.flight : '';
+    let flightNumber = params.flightNumber ? params.flightNumber : '';
     let airport = params.airport ? params.airport : '';
-    await flightModel.aggregate(
+    let allFlights = await flightModel.aggregate(
         [
             {
                 $match:
@@ -282,12 +281,9 @@ countStandartDeviation = async function (params) {
             }
         ]
     ).then((cb) => {
-        cb.forEach((doc) => {
-            allFlights.push(doc);
-        })
+        return cb;
     });
-    let disruptedFlights = [];
-    await flightModel.aggregate(
+    let disruptedFlights = await flightModel.aggregate(
         [
             {
                 $match:
@@ -332,24 +328,22 @@ countStandartDeviation = async function (params) {
             }
         ]
     ).then((cb) => {
-        cb.forEach((doc) => {
-            disruptedFlights.push(doc);
-        })
+        return cb;
     });
     let allMeans = [];
-    if (params.airport) {
-        let flightsArr = [];
-        let uniqueDates = [];
-        allFlights.forEach((e) => {
-            if (uniqueDates.length === 0) {
-                uniqueDates.push(e._id.date);
-            } else {
-                if (uniqueDates.indexOf(e._id.date) < 0) {
-                    uniqueDates.push(e._id.date);
-                }
-            }
-        })
+    let uniqueDates = [];
+    let flightsArr = [];
 
+    await allFlights.forEach((e) => {
+        if (uniqueDates.length === 0) {
+            uniqueDates.push(e._id.date);
+        } else {
+            if (uniqueDates.indexOf(e._id.date) < 0) {
+                uniqueDates.push(e._id.date);
+            }
+        }
+    });
+    if (params.airport) {
         for (let d of uniqueDates) {
             let t_allFlights = await allFlights.filter(x => {
                 return x._id.date === d;
@@ -367,19 +361,26 @@ countStandartDeviation = async function (params) {
             }, 0);
             flightsArr.push(sum_b / sum_a);
         }
-
         allMeans = await flightsArr;
         return statistics.standardDeviation(allMeans);
-    } else if (params.flight) {
-        allFlights.forEach((flight) => {
-            disruptedFlight = disruptedFlights.find((x) => { return x.date === flight.date });
-            if (disruptedFlight) {
-                mean = disruptedFlight.count / flight.count;
-                allMeans.push(mean);
-            } else {
-                allMeans.push(0);
-            }
-        });
+    } else if (params.flightNumber) {
+        for (let d of uniqueDates) {
+            let t_allFlights = await allFlights.filter(x => {
+                return (x._id.date === d) && (x._id.flightNumber === params.flightNumber);
+            });
+            let t_disruptedFlights = await disruptedFlights.filter((x) => {
+                return (x._id.date === d) && (x._id.flightNumber === params.flightNumber);
+            });
+            let sum_a = await t_allFlights.reduce((sum, currValue) => {
+                return sum + currValue.count;
+            }, 0);
+
+            let sum_b = await t_disruptedFlights.reduce((sum, currValue) => {
+                return sum + currValue.count;
+            }, 0);
+            flightsArr.push(sum_b / sum_a);
+        }
+        allMeans = await flightsArr;
         return statistics.standardDeviation(allMeans);
     } else return 0;
 }
@@ -394,7 +395,6 @@ exports.countStatistics = async function (params) {
                 objectToReturn.airportByDate = await countAverageOfDisruptions({ airport: params.airport, date: params.date });
             }
             objectToReturn.airportStandartDeviation = await countStandartDeviation(params);
-            console.log('main part done');
             objectToReturn.linkedFlights = await countCovarianceAndCorrelation(params);
         }
         if (params.flightNumber) {
