@@ -78,6 +78,7 @@ statusRouter.get('/', (req, res) => {
 flightRouter.use('/status', statusRouter);
 
 flightRouter.get('/', (req, res) => {
+    console.log('asdfgh');
     if ((req.aiport !== null && req.aiport !== undefined)
         && req.airport.length > 0) {
         flightModel.find({ airport: req.airport }, (err, flights) => {
@@ -206,7 +207,7 @@ airportRouter.get('/', (req, res) => {
         if (err) {
             res.status(503).send('Server error');
         } else {
-            res.send(response);
+            res.json(response);
         }
     });
 })
@@ -263,6 +264,15 @@ airportRouter.use('/:IATA/status', function (req, res, next) {
 }, statusRouter);
 
 router.use('/flight', flightRouter);
+router.use('/util/date', (req,res) => {
+    flightModel.find().distinct('date', (err, date)  => {
+        if (err) {
+            res.status(503).send("Internal error");
+        } else {
+            res.send(date);
+        }
+    })
+})
 
 router.use('/airport', airportRouter);
 

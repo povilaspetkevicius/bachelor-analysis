@@ -390,7 +390,10 @@ exports.countStatistics = async function (params) {
     var objectToReturn = {};
     if (params) {
         if (params.airport) {
-            objectToReturn.airport = await countAverageOfDisruptions({ airport: params.airport });
+            objectToReturn.airportMean = await countAverageOfDisruptions({ airport: params.airport });
+            let recordedFlights = await countFlights({ airport: params.airport }).then((res) => { return res });
+            objectToReturn.numberOfFlightsonRecord = await recordedFlights.countAllFlights;
+            objectToReturn.numberOfDisruptedFlightsOnRecords = await recordedFlights.countDisruptedFlights;
             if (params.date) {
                 objectToReturn.airportByDate = await countAverageOfDisruptions({ airport: params.airport, date: params.date });
             }
