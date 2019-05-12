@@ -171,10 +171,10 @@ countCovarianceAndCorrelation = async function (params) {
             return (a.correlationOfFlightDisruptions - b.correlationOfFlightDisruptions);
         }).reverse().slice(0, 9);
         let pairs_inverse_covary = await pairs.sort((a, b) => {
-            return (a.correlationOfFlightDisruptions - b.correlationOfFlightDisruptions);
+            return (a.covarianceOfFlightDisruptions - b.covarianceOfFlightDisruptions);
         }).slice(0, 9);
         let pairs_covary = await pairs.sort((a, b) => {
-            return (a.correlationOfFlightDisruptions - b.correlationOfFlightDisruptions);
+            return (a.covarianceOfFlightDisruptions - b.covarianceOfFlightDisruptions);
         }).reverse().slice(0, 9);
         return {
             fl_cov: pairs_covary,
@@ -190,7 +190,6 @@ countCovarianceAndCorrelation = async function (params) {
 
 getDistinctFlights = async function (airport) {
     flightModel.find({ airport: airport }, (err, flights) => {
-        console.log(flights.length);
         if (err) {
             throw err;
         } else if (flights.length === 0) {
@@ -205,7 +204,7 @@ getDistinctFlights = async function (airport) {
     })
 }
 
-countAverageOfDisruptions = async function (searchParams) {
+countRatioOfDisruptionsToAllFlights = async function (searchParams) {
     let allFlights;
     let disruptedFlights;
 
@@ -386,35 +385,35 @@ countStandartDeviation = async function (params) {
 }
 
 
-exports.countStatistics = async function (params) {
-    var objectToReturn = {};
+exports.getStatistics = async function (params) {
+    var statistic = {};
     if (params) {
         if (params.airport) {
-            objectToReturn.airportMean = await countAverageOfDisruptions({ airport: params.airport });
+            statistic.airportMean = await countRatioOfDisruptionsToAllFlights({ airport: params.airport });
             let recordedFlights = await countFlights({ airport: params.airport }).then((res) => { return res });
-            objectToReturn.numberOfFlightsonRecord = await recordedFlights.countAllFlights;
-            objectToReturn.numberOfDisruptedFlightsOnRecords = await recordedFlights.countDisruptedFlights;
+            statistic.numberOfFlightsonRecord = await recordedFlights.countAllFlights;
+            statistic.numberOfDisruptedFlightsOnRecords = await recordedFlights.countDisruptedFlights;
             if (params.date) {
-                objectToReturn.airportByDate = await countAverageOfDisruptions({ airport: params.airport, date: params.date });
+                statistic.airportByDate = await countRatioOfDisruptionsToAllFlights({ airport: params.airport, date: params.date });
             }
-            objectToReturn.airportStandartDeviation = await countStandartDeviation(params);
-            objectToReturn.linkedFlights = await countCovarianceAndCorrelation(params);
+            statistic.airportStandartDeviation = await countStandartDeviation(params);
+            statistic.linkedFlights = await countCovarianceAndCorrelation(params);
         }
         if (params.flightNumber) {
-            objectToReturn.disruptionAvg = await countAverageOfDisruptions({ flightNumber: params.flightNumber });
+            statistic.disruptionAvg = await countRatioOfDisruptionsToAllFlights({ flightNumber: params.flightNumber });
             let recordedFlights = await countFlights({ flightNumber: params.flightNumber }).then((res) => { return res });
-            objectToReturn.numberOfFlightsonRecord = await recordedFlights.countAllFlights;
-            objectToReturn.numberOfDisruptedFlightsOnRecords = await recordedFlights.countDisruptedFlights;
+            statistic.numberOfFlightsonRecord = await recordedFlights.countAllFlights;
+            statistic.numberOfDisruptedFlightsOnRecords = await recordedFlights.countDisruptedFlights;
             if (params.date) {
-                objectToReturn.flightByDate = await countAverageOfDisruptions({ flightNumber: params.flightNumber, date: params.date });
+                statistic.flightByDate = await countRatioOfDisruptionsToAllFlights({ flightNumber: params.flightNumber, date: params.date });
                 let recordedFlights = await countFlights({ flightNumber: params.flightNumber, date: params.date }).then((res) => { return res });
-                objectToReturn.numberOfFlightsOnDateOnRecord = await recordedFlights.countAllFlights;
-                objectToReturn.numberOfDisruptedFlightsOnDateOnRecord = await recordedFlights.countDisruptedFlights;
+                statistic.numberOfFlightsOnDateOnRecord = await recordedFlights.countAllFlights;
+                statistic.numberOfDisruptedFlightsOnDateOnRecord = await recordedFlights.countDisruptedFlights;
             }
-            objectToReturn.disruptionStdDeviation = await countStandartDeviation(params);
-            objectToReturn.linkedFlights = await countCovarianceAndCorrelation(params);
+            statistic.disruptionStdDeviation = await countStandartDeviation(params);
+            statistic.linkedFlights = await countCovarianceAndCorrelation(params);
         }
 
     }
-    return objectToReturn;
+    return statistic;
 }

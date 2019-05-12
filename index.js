@@ -34,6 +34,8 @@ let airportRouter = express.Router();
 
 var flightModel = require('./models').flightModel;
 
+var flightInfoModel = require('./models').flightInfoModel;
+
 mongo.connect();
 statusRouter.get('/', (req, res) => {
     if (req.flightNo !== undefined && req.flightNo !== '' && req.flightNo.length !== 0) {
@@ -44,17 +46,17 @@ statusRouter.get('/', (req, res) => {
                 res.status(204).send('No Flights found containing flight number: ' + req.flightNo);
             } else {
                 let statuses = [];
-                flights.sort((a,b) => {
+                flights.sort((a, b) => {
                     return a.date > b.date;
                 }).reverse().filter((e) => {
                     return e.status.length > 0;
-                }).slice(0,99).forEach((e) => {
+                }).slice(0, 99).forEach((e) => {
                     statuses.push(e.status);
                 });
                 res.send(statuses);
             }
         })
-    } else if (req.airport !== undefined && req.airport !== '' && req.airport.length !== 0){
+    } else if (req.airport !== undefined && req.airport !== '' && req.airport.length !== 0) {
         flightModel.find({ airport: req.airport }, (err, flights) => {
             if (err) {
                 res.status(503).send('Internal error');
@@ -62,11 +64,11 @@ statusRouter.get('/', (req, res) => {
                 res.status(204).send('No Flights statuses found for airport : ' + req.airport);
             } else {
                 let statuses = [];
-                flights.sort((a,b) => {
+                flights.sort((a, b) => {
                     return a.date > b.date;
                 }).reverse().filter((e) => {
                     return e.status.length > 0;
-                }).slice(0,99).forEach((e) => {
+                }).slice(0, 179).forEach((e) => {
                     statuses.push(e.status);
                 });
                 res.send(statuses);
@@ -78,8 +80,7 @@ statusRouter.get('/', (req, res) => {
 flightRouter.use('/status', statusRouter);
 
 flightRouter.get('/', (req, res) => {
-    console.log('asdfgh');
-    if ((req.aiport !== null && req.aiport !== undefined)
+    if ((req.airport !== null && req.airport !== undefined)
         && req.airport.length > 0) {
         flightModel.find({ airport: req.airport }, (err, flights) => {
             if (err) {
@@ -102,35 +103,46 @@ flightRouter.get('/', (req, res) => {
 });
 
 flightRouter.get('/records', (req, res) => {
-    console.log(req.airport);
     if ((req.airport !== null && req.airport !== undefined)
         && req.airport.length > 0) {
-            
+
         flightModel.find({ airport: req.airport }, (err, flights) => {
             if (err) {
                 res.status(503).send('Internal server error');
             } else if (flights.length === 0) {
                 res.status(204).send('No flights for airport ' + req.airport + ' found');
             } else {
-                flights = flights.sort((a,b) => {
+                flights = flights.sort((a, b) => {
                     return a.date > b.date;
                 }).reverse().filter((e) => {
                     return e.status.length > 0;
-                }).slice(0,99);
+                }).slice(0, 99);
                 res.send(flights);
             }
         });
     } else {
         flightModel.find({}, (err, flights) => {
-            flights = flights.sort((a,b) => {
+            flights = flights.sort((a, b) => {
                 return a.date > b.date;
             }).reverse().filter((e) => {
                 return e.status.length > 0;
-            }).slice(0,99);
+            }).slice(0, 99);
             res.send(flights);
         });
     }
 });
+
+flightRouter.get('/info', (req, res) => {
+    flightInfoModel.find({}, (err, info) => {
+        console.log(info);
+        if (err) res.status(503).send('Internal server error');
+        else if (info && info.length === 0) {
+            res.status(204).send('No flight information for flight' + req.params.fn + ' found.');
+        } else {
+            res.status(200).send(info);
+        }
+    })
+})
 
 flightRouter.get('/:fn/records', (req, res) => {
     if ((req.aiport !== null && req.aiport !== undefined)
@@ -139,15 +151,15 @@ flightRouter.get('/:fn/records', (req, res) => {
             if (err) {
                 res.status(503).send('Internal server error');
             } else if (flights.length === 0) {
-                res.status(204).send('No flights for airport ' + req.airport + 'and flight' + fn + ' found.');
+                res.status(204).send('No flights for airport ' + req.airport + 'and flight' + req.params.fn + ' found.');
             } else {
                 res.send(flights);
             }
         });
     } else {
-        flightModel.find({flightNumber: req.params.fn}, (err, flights) => {
+        flightModel.find({ flightNumber: req.params.fn }, (err, flights) => {
             if (flights.length === 0) {
-                res.status(204).send('No Flights found containing flight number: ' + req.params.flightNumber);
+                res.status(204).send('No Flights found containing flight number: ' + req.params.fn);
             } else {
                 res.status(200).send(flights);
             }
@@ -163,15 +175,15 @@ flightRouter.use('/:flightNumber/status', function (req, res, next) {
 
 flightRouter.use('/:flightNumber/stats', function (req, res, next) {
     req.flightNumber = req.params.flightNumber;
-    try{
-        var p = new Promise((resolve,reject) => {
-            let s = stats.countStatistics(req);
+    try {
+        var p = new Promise((resolve, reject) => {
+            let s = stats.getStatistics(req);
             resolve(s);
         })
         p.then((result) => {
             res.send(result);
         });
-    } catch(err) {
+    } catch (err) {
         res.status(503).json({
             'message': 'something went wrong...',
             'error': err
@@ -182,15 +194,15 @@ flightRouter.use('/:flightNumber/stats', function (req, res, next) {
 flightRouter.use('/:flightNumber/:date/stats', function (req, res) {
     req.flightNumber = req.params.flightNumber;
     req.date = req.params.date;
-    try{
-        var p = new Promise((resolve,reject) => {
-            let s = stats.countStatistics(req);
+    try {
+        var p = new Promise((resolve, reject) => {
+            let s = stats.getStatistics(req);
             resolve(s);
         })
         p.then((result) => {
             res.send(result);
         });
-    } catch(err) {
+    } catch (err) {
         res.status(503).json({
             'message': 'something went wrong...',
             'error': err
@@ -214,23 +226,22 @@ airportRouter.get('/', (req, res) => {
 
 airportRouter.use('/:IATA/flight', function (req, res, next) {
     req.airport = req.params.IATA;
-    console.log(req.airport);
     next();
 }, flightRouter);
 
 
 airportRouter.use('/:IATA/stats', function (req, res) {
     req.airport = req.params.IATA;
-    try{
-        var p = new Promise((resolve,reject) => {
-            let s = stats.countStatistics(req);
+    try {
+        var p = new Promise((resolve, reject) => {
+            let s = stats.getStatistics(req);
             resolve(s);
         })
         p.then((result) => {
             result.airport = req.params.IATA;
             res.send(result);
         });
-    } catch(err) {
+    } catch (err) {
         res.status(503).json({
             'message': 'something went wrong...',
             'error': err
@@ -241,9 +252,9 @@ airportRouter.use('/:IATA/stats', function (req, res) {
 airportRouter.use('/:IATA/:date/stats', function (req, res) {
     req.airport = req.params.IATA;
     req.date = req.params.date;
-    try{
-        var p = new Promise((resolve,reject) => {
-            let s = stats.countStatistics(req);
+    try {
+        var p = new Promise((resolve, reject) => {
+            let s = stats.getStatistics(req);
             resolve(s);
         })
         p.then((result) => {
@@ -251,7 +262,7 @@ airportRouter.use('/:IATA/:date/stats', function (req, res) {
             result.date = req.params.date;
             res.send(result);
         });
-    } catch(err) {
+    } catch (err) {
         res.status(503).json({
             'message': 'something went wrong...',
             'error': err
@@ -264,8 +275,8 @@ airportRouter.use('/:IATA/status', function (req, res, next) {
 }, statusRouter);
 
 router.use('/flight', flightRouter);
-router.use('/util/date', (req,res) => {
-    flightModel.find().distinct('date', (err, date)  => {
+router.use('/util/date', (req, res) => {
+    flightModel.find().distinct('date', (err, date) => {
         if (err) {
             res.status(503).send("Internal error");
         } else {
